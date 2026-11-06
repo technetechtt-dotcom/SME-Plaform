@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ApiPortal } from './components/ApiPortal';
 import { LoginPage } from './components/LoginPage';
 import { OrganizationDashboard } from './components/dashboards/OrganizationDashboard';
 import { MentorDashboard } from './components/dashboards/MentorDashboard';
@@ -8,6 +9,12 @@ import { ToastProvider } from './contexts/ToastContext';
 import { Role } from './types/platform';
 
 export function App() {
+  // The legacy role-picker demonstrates UI only; real deployments must use the authenticated portal.
+  if (import.meta.env.VITE_DEMO_MODE !== 'true') return <ApiPortal />;
+  return <DemoApp />;
+}
+
+function DemoApp() {
   const [role, setRole] = useState<Role | null>(null);
   const logout = () => setRole(null);
 
