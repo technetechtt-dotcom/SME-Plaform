@@ -38,8 +38,6 @@ export function ApiPortal() {
   const [slug,setSlug]=useState('');
   const [token,setToken]=useState('');
   const [programmeName,setProgrammeName]=useState('');
-  const [appName,setAppName]=useState('');
-  const [programmeChoice,setProgrammeChoice]=useState('');
   const [refresh,setRefresh]=useState(0);
   const active=members.find(m=>m.id===tenant);
   const admin=active?.role==='owner'||active?.role==='admin';
@@ -102,14 +100,6 @@ export function ApiPortal() {
     try{
       await request(`/organisations/${tenant}/programmes`,{method:'POST',body:JSON.stringify({name:programmeName})});
       setProgrammeName('');setRefresh(x=>x+1);setNotice('Programme created in draft status.');
-    }catch(e){setError((e as Error).message);}
-    finally{setBusy(false);}
-  };
-  const apply=async(e:React.FormEvent)=>{
-    e.preventDefault();setBusy(true);setError('');
-    try{
-      await request(`/organisations/${tenant}/applications`,{method:'POST',body:JSON.stringify({programmeId:programmeChoice,businessName:appName})});
-      setAppName('');setProgrammeChoice('');setRefresh(x=>x+1);setNotice('Application submitted.');
     }catch(e){setError((e as Error).message);}
     finally{setBusy(false);}
   };
