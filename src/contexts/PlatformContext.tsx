@@ -147,7 +147,10 @@ export function PlatformProvider({ children }: {children: React.ReactNode;}) {
     ),
     reviewSignoff: (id, status) => {
       const signoff = signoffs.find((s) => s.id === id);
-      setSignoffs((prev) => prev.map((s) => s.id === id ? { ...s, status } : s));
+      // Only a pending request may transition to an approved/rejected state.
+      // This prevents repeated approvals from incrementing disbursed amounts.
+      if (!signoff || signoff.status !== 'Requested') return;
+      setSignoffs((prev) => prev.map((s) => s.id === id && s.status === 'Requested' ? { ...s, status } : s));
       if (signoff && status === 'Approved') {
         const programme = programmes.find((p) => p.id === signoff.programmeId);
         const milestone = programme?.milestones.find((m) => m.id === signoff.milestoneId);
