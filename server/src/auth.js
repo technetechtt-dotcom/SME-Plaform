@@ -50,7 +50,7 @@ export async function authRoutes(app) {
       await client.query('INSERT INTO auth_tokens(user_id,purpose,token_hash,expires_at) VALUES($1,$2,$3,$4)',[user.rows[0].id,'verify',digest(raw),newTokenExpiry(60*24)]);
       return { organisationId:org.rows[0].id, userId:user.rows[0].id };
     });
-    try { await sendLink(mail,'Verify your SME-Plaform account','/verify-email',raw); }
+    try { await sendLink(mail,'Verify your SME-Plaform account','/?action=verify',raw); }
     catch(error) { request.log.error(error); return reply.code(503).send({ error:'Email delivery unavailable; contact support to complete verification' }); }
     await audit(result.organisationId,result.userId,'organisation.registered');
     return reply.code(201).send({ message:'Verification email sent. Organisation pending approval.' });
@@ -93,7 +93,7 @@ export async function authRoutes(app) {
     if(rows[0]){
       const raw=token();
       await pool.query('INSERT INTO auth_tokens(user_id,purpose,token_hash,expires_at) VALUES($1,$2,$3,$4)',[rows[0].id,'reset',digest(raw),newTokenExpiry(30)]);
-      try {await sendLink(normaliseEmail(parsed.email),'Reset your SME-Plaform password','/reset-password',raw);}
+      try {await sendLink(normaliseEmail(parsed.email),'Reset your SME-Plaform password','/?action=reset',raw);}
       catch(error){request.log.error(error);}
     }
     return {message:'If this account exists, a reset link will be sent'};
