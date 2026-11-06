@@ -55,6 +55,23 @@ export async function authRoutes(app) {
     await audit(result.organisationId,result.userId,'organisation.registered');
     return reply.code(201).send({ message:'Verification email sent. Organisation pending approval.' });
   });
+  app.post('/auth/register-invited',async(request,reply)=>{
+    const data=credentials.extend({invitationToken:z.string().min(30)}).parse(request.body);
+    const mail=normaliseEmail(data.email);
+    const hash=await hashPassword(data.password);
+    const accepted=await transaction(async client=>{
+      const {rows}=await client.query(`UPDATE invitations SET accepted_at=now()
+        WHERE token_hash=$1 AND email=$2 AND accepted_at IS NULL AND expires_at>now()
+        RETURNING organisation_id,role`,[digest(data.invitationToken),mail]);
+      if(!rows[0])return false;
+      const user=await client.query('INSERT INTO users(email,password_hash,verified_at) VALUES($1,$2,now()) RETURNING id',[mail,hash]);
+      await client.query('INSERT INTO memberships(organisation_id,user_id,role) VALUES($1,$2,$3)',
+        [rows[0].organisation_id,user.rows[0].id,rows[0].role]);
+      return true;
+    });
+    if(!accepted)return reply.code(400).send({error:'Invalid or expired invitation'});
+    return reply.code(201).send({message:'Invited account created. You can sign in.'});
+  });
   app.post('/auth/login', async (request,reply) => {
     const data = credentials.parse(request.body), mail = normaliseEmail(data.email);
     const {rows}=await pool.query('SELECT * FROM users WHERE email=$1',[mail]);
