@@ -116,7 +116,7 @@ export function SMEDashboard({ onLogout }: SMEDashboardProps) {
           <AIReadinessScorecard />
         </div>
         <div className="md:w-1/3">
-          <QuickActions />
+          <QuickActions onNavigate={setActive} />
         </div>
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
