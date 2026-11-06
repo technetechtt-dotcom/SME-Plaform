@@ -31,7 +31,7 @@ export function ApiPortal() {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
-  const [mode,setMode]=useState<'login'|'register'|'forgot'|'reset'|'verify'>('login');
+  const [mode,setMode]=useState<'login'|'register'|'forgot'|'reset'|'verify'|'invite'>('login');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [name,setName]=useState('');
@@ -52,7 +52,7 @@ export function ApiPortal() {
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
     const action=params.get('action'), t=params.get('token');
-    if(t){setToken(t);if(action==='verify')setMode('verify');if(action==='reset')setMode('reset');}
+    if(t){setToken(t);if(action==='verify')setMode('verify');if(action==='reset')setMode('reset');if(action==='invite')setMode('invite');}
     void readUser();
   },[readUser]);
   useEffect(()=>{
@@ -62,7 +62,7 @@ export function ApiPortal() {
       setBusy(true);setError('');
       try {
         if(view==='account'){setItems([]);return;}
-        const endpoint=view==='members'?'users':view;
+        const endpoint=view==='members'?'users':view==='applications'&&active?.role==='beneficiary'?'my-applications':view;
         const result=await request<{data:typeof items}>(`/organisations/${tenant}/${endpoint}`);
         if(!cancelled)setItems(result.data);
       }catch(e){if(!cancelled){setItems([]);setError((e as Error).message);}}
@@ -70,11 +70,15 @@ export function ApiPortal() {
     };
     void run();
     return()=>{cancelled=true;};
-  },[tenant,user,view,refresh]);
+  },[tenant,user,view,refresh,active?.role]);
   const submitAuth=async(e:React.FormEvent)=>{
     e.preventDefault();setBusy(true);setError('');setNotice('');
     try {
-      if(mode==='login'){
+      if(mode==='invite'){
+        await request('/auth/register-invited',{method:'POST',body:JSON.stringify({email,password,invitationToken:token})});
+        setNotice('Invitation accepted. Sign in to continue.');setPassword('');setMode('login');
+        window.history.replaceState(null,'',window.location.pathname);
+      }else if(mode==='login'){
         await request('/auth/login',{method:'POST',body:JSON.stringify({email,password})});
         await readUser();setPassword('');
       }else if(mode==='register'){
@@ -121,11 +125,11 @@ export function ApiPortal() {
     return <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white p-7 rounded-xl shadow border space-y-4">
         <h1 className="text-2xl font-semibold">SME-Plaform</h1>
-        <p className="text-sm text-gray-600">Secure account portal · {mode==='login'?'Sign in':mode==='register'?'Register your organisation':mode==='forgot'?'Recover account':mode==='verify'?'Verify email':'Reset password'}</p>
+        <p className="text-sm text-gray-600">Secure account portal · {mode==='login'?'Sign in':mode==='register'?'Register your organisation':mode==='forgot'?'Recover account':mode==='verify'?'Verify email':mode==='invite'?'Accept invitation':'Reset password'}</p>
         {error&&<Warning message={error}/>}
         {notice&&<p role="status" className="p-3 rounded-md bg-green-50 text-green-800 text-sm">{notice}</p>}
         <form onSubmit={submitAuth} className="space-y-3">
-          {['login','register','forgot'].includes(mode)&&<label className="block text-sm">Email address
+          {['login','register','forgot','invite'].includes(mode)&&<label className="block text-sm">Email address
             <input className="mt-1 w-full rounded-md border p-2" type="email" required value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>
           </label>}
           {mode==='register'&&<><label className="block text-sm">Organisation name
@@ -133,13 +137,13 @@ export function ApiPortal() {
           </label><label className="block text-sm">Organisation slug
             <input className="mt-1 w-full rounded-md border p-2" required pattern="[a-z0-9-]{3,80}" value={slug} onChange={e=>setSlug(e.target.value)}/>
           </label></>}
-          {['login','register','reset'].includes(mode)&&<label className="block text-sm">{mode==='reset'?'New password':'Password'}
+          {['login','register','reset','invite'].includes(mode)&&<label className="block text-sm">{mode==='reset'?'New password':'Password'}
             <input className="mt-1 w-full rounded-md border p-2" type="password" required minLength={mode==='login'?1:12} value={password} onChange={e=>setPassword(e.target.value)} autoComplete={mode==='login'?'current-password':'new-password'}/>
           </label>}
-          {['reset','verify'].includes(mode)&&<label className="block text-sm">Verification token
+          {['reset','verify','invite'].includes(mode)&&<label className="block text-sm">Verification token
             <input className="mt-1 w-full rounded-md border p-2" required value={token} onChange={e=>setToken(e.target.value)}/>
           </label>}
-          <button disabled={busy} className="w-full rounded-md bg-gray-900 text-white p-2 disabled:opacity-50">{busy?'Processing…':mode==='login'?'Sign in':mode==='register'?'Register':mode==='forgot'?'Send reset link':mode==='verify'?'Verify':'Update password'}</button>
+          <button disabled={busy} className="w-full rounded-md bg-gray-900 text-white p-2 disabled:opacity-50">{busy?'Processing…':mode==='login'?'Sign in':mode==='register'?'Register':mode==='forgot'?'Send reset link':mode==='verify'?'Verify':mode==='invite'?'Create invited account':'Update password'}</button>
         </form>
         <div className="flex flex-wrap gap-3 text-sm text-blue-700">
           <button onClick={()=>{setMode('login');setError('');}}>Sign in</button>
