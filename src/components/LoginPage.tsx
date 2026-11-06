@@ -107,6 +107,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <div className="w-full max-w-lg">
           <h2 className="text-2xl font-semibold text-gray-900">Sign in</h2>
           <p className="mt-1 text-sm text-gray-500">Choose how you take part in the programme.</p>
+          <div role="status" className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">Demo only: selecting a role grants access without verifying credentials. Do not enter a real password or personal information. Production authentication is not yet implemented.</div>
 
           <fieldset className="mt-6">
             <legend className="sr-only">Account type</legend>
