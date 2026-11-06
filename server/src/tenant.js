@@ -50,7 +50,7 @@ export async function tenantRoutes(app) {
     const raw=token(),email=normaliseEmail(input.email);
     await pool.query('INSERT INTO invitations(organisation_id,email,role,token_hash,expires_at,invited_by) VALUES($1,$2,$3,$4,$5,$6)',
       [request.tenant.id,email,input.role,digest(raw),newTokenExpiry(60*24*7),request.user.id]);
-    try {await sendLink(email,'SME-Plaform invitation','/accept-invitation',raw);}
+    try {await sendLink(email,'SME-Plaform invitation','/?action=invite',raw);}
     catch(error){request.log.error(error);return reply.code(503).send({error:'Invitation created but delivery failed; retry with a new invitation'});}
     return reply.code(201).send({message:'Invitation sent'});
   });
