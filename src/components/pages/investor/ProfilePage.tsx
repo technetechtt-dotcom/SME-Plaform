@@ -11,6 +11,7 @@ import {
   LogOutIcon,
   SaveIcon,
   ChevronRightIcon,
+  ArrowRightIcon,
   CheckCircleIcon,
   AlertCircleIcon,
   BarChart2Icon,
