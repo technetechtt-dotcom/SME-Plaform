@@ -1,5 +1,4 @@
-import React from 'react';
-import { UploadIcon, FileTextIcon, BanknoteIcon, BarChart2Icon, CalendarIcon, MessageSquareIcon } from 'lucide-react';
+import { UploadIcon, FileTextIcon, BanknoteIcon, BarChart2Icon } from 'lucide-react';
 
 interface QuickActionsProps {
   onNavigate: (page: 'profile' | 'funding' | 'returns' | 'growth') => void;
