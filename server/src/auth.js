@@ -104,6 +104,19 @@ export async function authRoutes(app) {
     await issueSession(reply,request.user.id);
     return {ok:true};
   });
+  app.post('/auth/resend-verification',async(request)=>{
+    const data=z.object({email}).parse(request.body);
+    const address=normaliseEmail(data.email);
+    const {rows}=await pool.query('SELECT id FROM users WHERE email=$1 AND verified_at IS NULL AND disabled_at IS NULL',[address]);
+    if(rows[0]){
+      const raw=token();
+      await pool.query('INSERT INTO auth_tokens(user_id,purpose,token_hash,expires_at) VALUES($1,$2,$3,$4)',
+        [rows[0].id,'verify',digest(raw),newTokenExpiry(60*24)]);
+      try{await sendLink(address,'Verify your SME-Plaform account','/?action=verify',raw);}
+      catch(error){request.log.error(error);}
+    }
+    return {message:'If verification is pending, a new verification link will be sent'};
+  });
   app.post('/auth/forgot-password',async(request,reply)=>{
     const parsed=z.object({email}).parse(request.body);
     const {rows}=await pool.query('SELECT id FROM users WHERE email=$1 AND disabled_at IS NULL',[normaliseEmail(parsed.email)]);
