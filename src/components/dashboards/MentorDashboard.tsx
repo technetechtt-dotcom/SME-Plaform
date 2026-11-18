@@ -23,7 +23,7 @@ import { DevelopmentPlansPage } from '../pages/mentor/DevelopmentPlansPage';
 import { TrainingHubPage } from '../pages/mentor/TrainingHubPage';
 import { SMEProgressPage } from '../pages/mentor/SMEProgressPage';
 import { EvaluationsPage } from '../pages/mentor/EvaluationsPage';
-import { ProfilePage } from '../pages/investor/ProfilePage';
+import { MentorProfilePage } from '../pages/mentor/MentorProfilePage';
 
 interface MentorDashboardProps {
   onLogout: () => void;
@@ -86,7 +86,7 @@ export function MentorDashboard({ onLogout }: MentorDashboardProps) {
       case 'evaluations':
         return <EvaluationsPage />;
       case 'profile':
-        return <ProfilePage />;
+        return <MentorProfilePage />;
       default:
         return <MentorOverviewPage onNavigate={setActive} />;
     }
