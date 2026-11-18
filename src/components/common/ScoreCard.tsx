@@ -5,7 +5,7 @@ interface ScoreCardProps {
   maxScore: number;
   trend: 'up' | 'down' | 'neutral';
   trendValue: number;
-  type: 'percentage' | 'count' | 'currency' | 'ai' | 'roi' | 'money';
+  type: 'percentage' | 'count' | 'currency' | 'ai' | 'roi' | 'money' | 'growth' | 'risk' | 'opportunity' | 'compliance' | 'funding';
   description: string;
 }
 export function ScoreCard({
