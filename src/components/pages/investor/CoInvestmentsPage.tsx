@@ -3,6 +3,7 @@ import {
   SearchIcon,
   FilterIcon,
   TrendingUpIcon,
+  TrendingDownIcon,
   ArrowRightIcon,
   UsersIcon,
   CheckCircleIcon,
