@@ -1,4 +1,3 @@
-import React from 'react';
 import { ScoreCard } from '../../common/ScoreCard';
 import { ChevronRightIcon } from 'lucide-react';
 export function AIReadinessScorecard() {
