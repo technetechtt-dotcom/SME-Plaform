@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { LogOutIcon, RefreshCwIcon } from 'lucide-react';
 import { PlatformAdminPanel } from './PlatformAdminPanel';
 import { InviteMember, ApplyToProgramme } from './OrganisationActions';
+import { OperationalPages } from './OperationalPages';
 
 type Member = { id: string; name: string; status: string; role: string };
 type User = { id: string; email: string };
@@ -9,8 +10,8 @@ type Programme = { id: string; name: string; description: string; status: string
 type Task = { id: string; title: string; status: string; due_at: string | null };
 type Application = { id: string; business_name: string; status: string };
 type MemberItem = {id:string;email:string;role:string;active:boolean};
-type View = 'programmes' | 'tasks' | 'applications' | 'members' | 'account';
-const pages: View[] = ['programmes','tasks','applications','members','account'];
+type View = 'programmes' | 'tasks' | 'applications' | 'members' | 'account' | 'sessions' | 'returns' | 'signoffs' | 'audit';
+const pages: View[] = ['programmes','tasks','applications','members','account','sessions','returns','signoffs','audit'];
 function pageFromUrl(): View | null {
   const p=window.location.pathname;
   if(p==='/'||p==='/app'||p==='/app/')return 'programmes';
@@ -86,7 +87,7 @@ export function ApiPortal() {
     const run=async()=>{
       setBusy(true);setError('');
       try {
-        if(view==='account'){setItems([]);return;}
+        if(view==='account'||view==='sessions'||view==='returns'||view==='signoffs'||view==='audit'){setItems([]);return;}
         const endpoint=view==='members'?'users':view==='applications'&&active?.role==='beneficiary'?'my-applications':view;
         const result=await request<{data:typeof items}>(`/organisations/${tenant}/${endpoint}`);
         if(!cancelled)setItems(result.data);
@@ -224,10 +225,13 @@ export function ApiPortal() {
       {showPlatformAdmin&&isPlatformAdmin&&<PlatformAdminPanel/>}
       {routeMissing&&!showPlatformAdmin&&<section role="alert" className="rounded border bg-white p-6"><h2 className="font-semibold text-xl">404 — Page not found</h2><p className="my-3">The requested page does not exist.</p><button className="rounded border px-3 py-2" onClick={()=>navigate('programmes')}>Go to programmes</button></section>}
       {tenant&&!showPlatformAdmin&&!routeMissing&&<><nav aria-label="Portal pages" className="flex gap-2 flex-wrap">
-        {(['programmes','tasks','applications',...(admin?['members']:[]),'account'] as View[]).map(item=><button key={item} aria-current={view===item?'page':undefined} onClick={()=>navigate(item)}
+        {(['programmes','tasks','applications','sessions','returns',...(['owner','admin','mentor'].includes(active?.role||'')?['signoffs']:[]),...(admin?['members','audit']:[]),'account'] as View[]).map(item=><button key={item} aria-current={view===item?'page':undefined} onClick={()=>navigate(item)}
           className={`rounded px-3 py-2 text-sm capitalize ${view===item?'bg-gray-900 text-white':'bg-white border text-gray-700'}`}>{item}</button>)}
       </nav>
       <section className="bg-white border rounded-xl p-4 md:p-6 space-y-4">
+        {view==='sessions'||view==='returns'||view==='signoffs'||view==='audit'
+          ? <OperationalPages tenant={tenant} role={active?.role||'viewer'} view={view} currentUserId={user.id}/>
+          : <>
         <h2 className="text-xl font-semibold capitalize">{view}</h2>
         {view==='programmes'&&admin&&<form onSubmit={createProgramme} className="flex flex-wrap gap-2">
           <input aria-label="New programme name" value={programmeName} onChange={e=>setProgrammeName(e.target.value)} minLength={2} required placeholder="New programme name" className="border rounded p-2 flex-1 min-w-44"/>
@@ -264,6 +268,7 @@ export function ApiPortal() {
               {view==='programmes'&&admin&&'status' in item&&item.status==='published'&&<button className="border rounded px-3 py-2 text-sm" onClick={()=>void updateProgramme(item.id,'archived')}>Archive</button>}
             </li>)}
           </ul>}
+        </>}
       </section></>}
     </main>
   </div>;
