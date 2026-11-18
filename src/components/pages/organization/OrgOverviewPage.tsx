@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowRightIcon, FileCheckIcon, FlagIcon, InboxIcon, PlusIcon } from 'lucide-react';
 import { usePlatform } from '../../../contexts/PlatformContext';
 import { useOrgScope } from '../../../hooks/useOrgScope';

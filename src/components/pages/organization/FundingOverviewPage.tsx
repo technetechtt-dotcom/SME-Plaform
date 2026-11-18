@@ -1,4 +1,3 @@
-import React from 'react';
 import { useOrgScope } from '../../../hooks/useOrgScope';
 import { PageHeader } from '../../common/PageHeader';
 import { ProgressBar } from '../../common/ProgressBar';
