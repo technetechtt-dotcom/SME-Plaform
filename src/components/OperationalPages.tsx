@@ -1,4 +1,4 @@
-import { useCallback,useEffect,useState } from 'react';
+import { useCallback,useEffect,useState, type FormEvent } from 'react';
 const base=(import.meta.env.VITE_API_BASE_URL||'').replace(/\/$/,'');
 type RecordRow={id:string;[key:string]:unknown};
 type View='sessions'|'returns'|'signoffs'|'audit';
@@ -45,7 +45,7 @@ export function OperationalPages({tenant,role,view,currentUserId}:Props){
   }).catch(e=>{if(!cancelled)setError((e as Error).message);});
   return()=>{cancelled=true};
  },[tenant,view]);
- const submitReturn=async(e:React.FormEvent)=>{
+ const submitReturn=async(e:FormEvent)=>{
   e.preventDefault();setBusy(true);setError('');setNotice('');
   const rev=Math.round(Number(revenue)*100),exp=Math.round(Number(expenses)*100),n=Number(jobs);
   if(![rev,exp,n].every(Number.isSafeInteger)||[rev,exp,n].some(x=>x<0)){setError('Enter valid nonnegative financial amounts and jobs.');setBusy(false);return;}
@@ -54,7 +54,7 @@ export function OperationalPages({tenant,role,view,currentUserId}:Props){
    setNotice('Monthly return submitted.');setRevenue('');setExpenses('');setJobs('0');setRefresh(n=>n+1);
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
  };
- const requestSignoff=async(e:React.FormEvent)=>{
+ const requestSignoff=async(e:FormEvent)=>{
   e.preventDefault();setBusy(true);setError('');setNotice('');
   const cents=Math.round(Number(amount)*100);
   if(!Number.isSafeInteger(cents)||cents<=0){setError('Enter a positive amount.');setBusy(false);return;}
