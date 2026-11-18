@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { UsersIcon } from 'lucide-react';
 import { usePlatform } from '../../../contexts/PlatformContext';
 import { useMentorScope } from '../../../hooks/useMentorScope';
