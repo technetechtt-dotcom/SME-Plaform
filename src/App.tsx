@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApiPortal } from './components/ApiPortal';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { LoginPage } from './components/LoginPage';
 import { OrganizationDashboard } from './components/dashboards/OrganizationDashboard';
 import { MentorDashboard } from './components/dashboards/MentorDashboard';
@@ -10,8 +11,8 @@ import { Role } from './types/platform';
 
 export function App() {
   // The legacy role-picker demonstrates UI only; real deployments must use the authenticated portal.
-  if (import.meta.env.VITE_DEMO_MODE !== 'true') return <ApiPortal />;
-  return <DemoApp />;
+  if (import.meta.env.VITE_DEMO_MODE !== 'true') return <AppErrorBoundary><ApiPortal /></AppErrorBoundary>;
+  return <AppErrorBoundary><DemoApp /></AppErrorBoundary>;
 }
 
 function DemoApp() {
