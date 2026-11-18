@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 const base=(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/,'');
 async function api(path:string,options:RequestInit={}) {
  const r=await fetch(base+path,{...options,credentials:'include',headers:{'Content-Type':'application/json',...options.headers}});
@@ -9,7 +9,7 @@ async function api(path:string,options:RequestInit={}) {
 export function InviteMember({tenant,onSuccess}:{tenant:string;onSuccess:()=>void}){
  const[email,setEmail]=useState('');const[role,setRole]=useState('mentor');
  const[message,setMessage]=useState('');const[error,setError]=useState('');const[busy,setBusy]=useState(false);
- const submit=async(e:React.FormEvent)=>{
+ const submit=async(e:FormEvent)=>{
   e.preventDefault();setBusy(true);setError('');setMessage('');
   try{await api(`/organisations/${tenant}/invitations`,{method:'POST',body:JSON.stringify({email,role})});
    setEmail('');setMessage('Invitation sent');onSuccess();}
@@ -41,7 +41,7 @@ export function ApplyToProgramme({tenant,onSuccess}:{tenant:string;onSuccess:()=
   }).catch(e=>{if(!cancel)setError((e as Error).message);});
   return()=>{cancel=true};
  },[tenant]);
- const submit=async(e:React.FormEvent)=>{
+ const submit=async(e:FormEvent)=>{
   e.preventDefault();setBusy(true);setError('');setMessage('');
   try{await api(`/organisations/${tenant}/applications`,{method:'POST',body:JSON.stringify({programmeId,businessName})});
    setBusinessName('');setMessage('Application submitted.');onSuccess();}
