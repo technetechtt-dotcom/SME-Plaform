@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CalendarIcon, ChevronRightIcon, PlusIcon } from 'lucide-react';
 import { useOrgScope } from '../../../hooks/useOrgScope';
 import { PageHeader } from '../../common/PageHeader';
