@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeftIcon, PlusIcon, UsersIcon } from 'lucide-react';
 import { Programme } from '../../types/platform';
 import { usePlatform } from '../../contexts/PlatformContext';
