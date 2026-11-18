@@ -26,15 +26,15 @@ See [server/README.md](server/README.md) for PostgreSQL, SMTP and migration setu
 
 - Argon2id-backed credential verification, email verification/reset flows, revocable sessions and account lockout foundation.
 - Organisation registration (pending review), invitations and invited account signup.
-- Basic authenticated organisation selector and frontend record views.
+- Authenticated organisation selector and linked pages for programmes, applications, tasks, sessions, monthly returns, signoffs, audit history and member administration.
 - SQL tables and tenant-filtered endpoints for programmes, applications, tasks, mentor sessions and monthly returns.
 - Transactional milestone approvals with unique ledger record and budget limit.
-- Initial API input validation, rate-limiting, security headers, audit records, automated backend checks and CI.
+- Initial API input validation, rate-limiting, security headers, audit records and PostgreSQL-backed integration checks in GitHub Actions.
 
 ## Outstanding before commercial launch
 
 - Full migration of the rich organisation, mentor and SME dashboards to persistent APIs.
-- MFA, production super-admin, organisation approval workflow and full tenant-level database isolation testing.
+- MFA, extended super-admin features, production verification of organisation approval and full tenant-level database isolation testing.
 - Complete documents, learning, evaluations, government, investments, subscriptions, payments, notifications, messaging, AI and analytics functionality.
 - Finalise data protection, POPIA policies, financial governance and user-data export/erasure workflows.
 - Full automated tests, penetration testing, infrastructure, backups, CI build/TypeScript remediation and deployment.
@@ -42,3 +42,17 @@ See [server/README.md](server/README.md) for PostgreSQL, SMTP and migration setu
 **Important:** The repository includes hundreds of historical TypeScript issues from the legacy demo screens. CI currently reports these failures. They must be fixed rather than waived before launch.
 
 No feature should be described as production-ready solely because an API endpoint or screen exists.
+
+## Changes from the latest navigation and security repair pass
+
+- Fixed backend email dependency declaration and expanded environment configuration.
+- Added a controlled platform administrator bootstrap, approval/suspension API and basic admin screen.
+- Added user-invitation forms, programme applications, member controls, status review buttons and dedicated API-backed operational screens.
+- Added `/app/*` deep-link navigation, browser history handling, 404 fallback and error boundary; mobile record layouts and navigation improved in code.
+- Restricted programme visibility and tenant-scoped reporting access. Added application transition constraints and financial signoff maker-checker checks.
+- Added PostgreSQL migration, server startup and targeted integration-test scenarios to CI.
+- Cleaned numerous unused imports and missing icon declarations in legacy pages; **legacy TypeScript issues remain**.
+
+### Important
+
+These are committed source changes, not proof that every UI control works. A deployed browser test covering desktop, tablet and mobile is still required. A clean TypeScript build, live SMTP, storage integrations, production secrets, backups, and full audit/finance tests remain release blockers.
