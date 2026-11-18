@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Role } from '../../types/platform';
 import { NavSection, Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -27,6 +27,12 @@ export function DashboardShell({
   children
 }: DashboardShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    const key=(event:KeyboardEvent)=>{if(event.key==='Escape')setMenuOpen(false);};
+    document.addEventListener('keydown',key);
+    return()=>document.removeEventListener('keydown',key);
+  },[menuOpen]);
 
   const navigate = (id: string) => {
     onNavigate(id);
@@ -54,7 +60,10 @@ export function DashboardShell({
           onClick={() => setMenuOpen(false)}
           aria-hidden="true" />
         
-          <div className="relative panel-enter">{sidebar}</div>
+          <div className="relative panel-enter h-full" role="dialog" aria-label="Mobile navigation" aria-modal="true">
+            <button type="button" className="absolute right-3 top-3 z-10 rounded bg-gray-100 px-3 py-2 text-sm text-gray-800" aria-label="Close navigation" onClick={()=>setMenuOpen(false)}>Close</button>
+            {sidebar}
+          </div>
         </div>
       }
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -64,7 +73,7 @@ export function DashboardShell({
           subtitle={subtitle}
           onOpenMenu={() => setMenuOpen(true)} />
         
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto min-w-0 p-3 sm:p-4 md:p-6">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
