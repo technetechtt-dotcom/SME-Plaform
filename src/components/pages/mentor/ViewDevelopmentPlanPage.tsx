@@ -23,7 +23,8 @@ import {
   BarChart2Icon,
   ChevronDownIcon,
   ArrowUpRightIcon,
-  CheckIcon } from
+  CheckIcon,
+  AwardIcon } from
 'lucide-react';
 interface ViewDevelopmentPlanPageProps {
   planId?: number;
