@@ -224,7 +224,7 @@ export function ApiPortal() {
       {isPlatformAdmin&&<button type="button" onClick={()=>setShowPlatformAdmin(v=>!v)} className="rounded border bg-white px-4 py-2">{showPlatformAdmin?'Back to organisation':'Platform administration'}</button>}
       {showPlatformAdmin&&isPlatformAdmin&&<PlatformAdminPanel/>}
       {routeMissing&&!showPlatformAdmin&&<section role="alert" className="rounded border bg-white p-6"><h2 className="font-semibold text-xl">404 — Page not found</h2><p className="my-3">The requested page does not exist.</p><button className="rounded border px-3 py-2" onClick={()=>navigate('programmes')}>Go to programmes</button></section>}
-      {tenant&&!showPlatformAdmin&&!routeMissing&&<><nav aria-label="Portal pages" className="flex gap-2 flex-wrap">
+      {tenant&&!showPlatformAdmin&&!routeMissing&&<><nav aria-label="Portal pages" className="flex gap-2 flex-wrap items-center">
         {(['programmes','tasks','applications','sessions','returns',...(['owner','admin','mentor'].includes(active?.role||'')?['signoffs']:[]),...(admin?['members','audit']:[]),'account'] as View[]).map(item=><button key={item} aria-current={view===item?'page':undefined} onClick={()=>navigate(item)}
           className={`rounded px-3 py-2 text-sm capitalize ${view===item?'bg-gray-900 text-white':'bg-white border text-gray-700'}`}>{item}</button>)}
       </nav>
@@ -245,8 +245,8 @@ export function ApiPortal() {
           <p className="text-xs text-gray-500">Full legal data-subject export and erasure workflows remain pending.</p>
         </div>:busy?<p role="status">Loading…</p>:items.length===0?<p className="text-gray-500">No records available.</p>:
           <ul className="divide-y">
-            {items.map(item=><li key={item.id} className="py-3 flex justify-between gap-3 items-center">
-              <div><p className="font-medium">{'name' in item?item.name:'title' in item?item.title:'business_name' in item?item.business_name:'email' in item?item.email:'Record'}</p>
+            {items.map(item=><li key={item.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="min-w-0 flex-1"><p className="font-medium break-words">{'name' in item?item.name:'title' in item?item.title:'business_name' in item?item.business_name:'email' in item?item.email:'Record'}</p>
                 <p className="text-xs text-gray-500">{'status' in item?item.status:'role' in item?item.role:''}</p>
               </div>
               {view==='members'&&active?.role==='owner'&&'email' in item&&item.role!=='owner'&&<div className="flex gap-2 flex-wrap">
