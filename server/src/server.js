@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import { authRoutes } from './auth.js';
 import { tenantRoutes } from './tenant.js';
+import { platformAdminRoutes } from './platform-admin.js';
 const app=Fastify({logger:true,bodyLimit:1024*1024,trustProxy:false});
 const origin=process.env.WEB_ORIGIN || 'http://localhost:5173';
 await app.register(helmet);
@@ -28,5 +29,6 @@ app.setErrorHandler((error,request,reply)=>{
 app.get('/health',async()=>({status:'ok'}));
 await app.register(authRoutes,{prefix:'/api'});
 await app.register(tenantRoutes,{prefix:'/api'});
+await app.register(platformAdminRoutes,{prefix:'/api'});
 try {await app.listen({host:'0.0.0.0',port:Number(process.env.PORT||4000)});}
 catch(error){app.log.error(error);process.exit(1);}
