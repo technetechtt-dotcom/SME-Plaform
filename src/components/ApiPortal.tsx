@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { LogOutIcon, RefreshCwIcon } from 'lucide-react';
+import { PlatformAdminPanel } from './PlatformAdminPanel';
+import { InviteMember, ApplyToProgramme } from './OrganisationActions';
 
 type Member = { id: string; name: string; status: string; role: string };
 type User = { id: string; email: string };
@@ -7,6 +9,14 @@ type Programme = { id: string; name: string; description: string; status: string
 type Task = { id: string; title: string; status: string; due_at: string | null };
 type Application = { id: string; business_name: string; status: string };
 type View = 'programmes' | 'tasks' | 'applications' | 'members' | 'account';
+const pages: View[] = ['programmes','tasks','applications','members','account'];
+function pageFromUrl(): View | null {
+  const p=window.location.pathname;
+  if(p==='/'||p==='/app'||p==='/app/')return 'programmes';
+  if(!p.startsWith('/app/'))return null;
+  const value=p.substring('/app/'.length);
+  return pages.includes(value as View)?value as View:null;
+}
 
 const API = (import.meta.env.VITE_API_BASE_URL as string || '').replace(/\/$/,'');
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -26,7 +36,14 @@ export function ApiPortal() {
   const [user,setUser]=useState<User|null>(null);
   const [members,setMembers]=useState<Member[]>([]);
   const [tenant,setTenant]=useState<string>('');
-  const [view,setView]=useState<View>('programmes');
+  const [view,setView]=useState<View>(pageFromUrl()||'programmes');
+  const [routeMissing,setRouteMissing]=useState(!pageFromUrl());
+  const [isPlatformAdmin,setIsPlatformAdmin]=useState(false);
+  const [showPlatformAdmin,setShowPlatformAdmin]=useState(false);
+  const navigate=(next:View)=>{
+    setView(next);setRouteMissing(false);setShowPlatformAdmin(false);
+    window.history.pushState(null,'','/app/'+next);
+  };
   const [items,setItems]=useState<Array<Programme | Task | Application | {id:string;email:string;role:string}>>([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
@@ -46,8 +63,15 @@ export function ApiPortal() {
       const result=await request<{user:User;memberships:Member[]}>('/auth/me');
       setUser(result.user);
       setMembers(result.memberships);
+      const platform=await request<{isPlatformAdmin:boolean}>('/platform-admin/me').catch(()=>({isPlatformAdmin:false}));
+      setIsPlatformAdmin(platform.isPlatformAdmin);
       setTenant(old=>result.memberships.some(m=>m.id===old&&m.status==='active')?old:(result.memberships.find(m=>m.status==='active')?.id||''));
-    } catch { setUser(null);setMembers([]);setTenant('');}
+    } catch { setUser(null);setMembers([]);setTenant('');setIsPlatformAdmin(false);}
+  },[]);
+  useEffect(()=>{
+    const pop=()=>{const next=pageFromUrl();if(next){setView(next);setRouteMissing(false);}else setRouteMissing(true);};
+    window.addEventListener('popstate',pop);
+    return()=>window.removeEventListener('popstate',pop);
   },[]);
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
@@ -97,7 +121,7 @@ export function ApiPortal() {
     finally{setBusy(false);}
   };
   const logout=async()=>{
-    try{await request('/auth/logout',{method:'POST'});}finally{setUser(null);setMembers([]);setTenant('');setItems([]);}
+    try{await request('/auth/logout',{method:'POST'});}finally{setUser(null);setMembers([]);setTenant('');setItems([]);setShowPlatformAdmin(false);}
   };
   const createProgramme=async(e:React.FormEvent)=>{
     e.preventDefault();setBusy(true);setError('');
@@ -167,15 +191,18 @@ export function ApiPortal() {
       {notice&&<p role="status" className="rounded bg-green-50 p-3 text-green-800">{notice}</p>}
       <section className="bg-white rounded-lg border p-4">
         <label className="block text-sm font-medium">Organisation
-          <select value={tenant} onChange={e=>{setTenant(e.target.value);setView('programmes');}} className="mt-2 w-full rounded-md border p-2">
+          <select value={tenant} onChange={e=>{setTenant(e.target.value);navigate('programmes');}} className="mt-2 w-full rounded-md border p-2">
             {members.filter(m=>m.status==='active').map(m=><option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
             {!members.some(m=>m.status==='active')&&<option value="">No active organisation</option>}
           </select>
         </label>
         {!tenant&&<p className="mt-3 text-sm text-amber-800">Your organisation is awaiting activation. Contact the platform administrator.</p>}
       </section>
-      {tenant&&<><nav aria-label="Portal pages" className="flex gap-2 flex-wrap">
-        {(['programmes','tasks','applications',...(admin?['members']:[]),'account'] as View[]).map(item=><button key={item} aria-current={view===item?'page':undefined} onClick={()=>setView(item)}
+      {isPlatformAdmin&&<button type="button" onClick={()=>setShowPlatformAdmin(v=>!v)} className="rounded border bg-white px-4 py-2">{showPlatformAdmin?'Back to organisation':'Platform administration'}</button>}
+      {showPlatformAdmin&&isPlatformAdmin&&<PlatformAdminPanel/>}
+      {routeMissing&&!showPlatformAdmin&&<section role="alert" className="rounded border bg-white p-6"><h2 className="font-semibold text-xl">404 — Page not found</h2><p className="my-3">The requested page does not exist.</p><button className="rounded border px-3 py-2" onClick={()=>navigate('programmes')}>Go to programmes</button></section>}
+      {tenant&&!showPlatformAdmin&&!routeMissing&&<><nav aria-label="Portal pages" className="flex gap-2 flex-wrap">
+        {(['programmes','tasks','applications',...(admin?['members']:[]),'account'] as View[]).map(item=><button key={item} aria-current={view===item?'page':undefined} onClick={()=>navigate(item)}
           className={`rounded px-3 py-2 text-sm capitalize ${view===item?'bg-gray-900 text-white':'bg-white border text-gray-700'}`}>{item}</button>)}
       </nav>
       <section className="bg-white border rounded-xl p-4 md:p-6 space-y-4">
@@ -184,7 +211,8 @@ export function ApiPortal() {
           <input aria-label="New programme name" value={programmeName} onChange={e=>setProgrammeName(e.target.value)} minLength={2} required placeholder="New programme name" className="border rounded p-2 flex-1 min-w-44"/>
           <button disabled={busy} className="rounded bg-gray-900 text-white px-4">Create draft</button>
         </form>}
-        {view==='applications'&&active?.role==='beneficiary'&&<p className="text-sm text-gray-600">Apply from a published programme. Programme selection will be expanded in the complete beneficiary portal.</p>}
+        {view==='applications'&&active?.role==='beneficiary'&&<ApplyToProgramme tenant={tenant} onSuccess={()=>setRefresh(x=>x+1)}/>}
+        {view==='members'&&admin&&<InviteMember tenant={tenant} onSuccess={()=>setRefresh(x=>x+1)}/>} 
         {view==='account'?<div className="space-y-3">
           <p className="text-sm">Account: {user.email}</p>
           <button className="rounded border px-3 py-2" onClick={()=>void exportAccount()}>Export account summary</button>
