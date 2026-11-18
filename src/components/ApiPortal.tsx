@@ -8,6 +8,7 @@ type User = { id: string; email: string };
 type Programme = { id: string; name: string; description: string; status: string; budget_cents: string };
 type Task = { id: string; title: string; status: string; due_at: string | null };
 type Application = { id: string; business_name: string; status: string };
+type MemberItem = {id:string;email:string;role:string;active:boolean};
 type View = 'programmes' | 'tasks' | 'applications' | 'members' | 'account';
 const pages: View[] = ['programmes','tasks','applications','members','account'];
 function pageFromUrl(): View | null {
@@ -44,7 +45,7 @@ export function ApiPortal() {
     setView(next);setRouteMissing(false);setShowPlatformAdmin(false);
     window.history.pushState(null,'','/app/'+next);
   };
-  const [items,setItems]=useState<Array<Programme | Task | Application | {id:string;email:string;role:string}>>([]);
+  const [items,setItems]=useState<Array<Programme | Task | Application | MemberItem>>([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
@@ -137,6 +138,27 @@ export function ApiPortal() {
       setRefresh(x=>x+1);
     }catch(e){setError((e as Error).message);}
   };
+  const updateTaskStatus=async(id:string,status:'submitted'|'returned'|'completed')=>{
+    setError('');
+    try{
+      await request(`/organisations/${tenant}/tasks/${id}`,{method:'PATCH',body:JSON.stringify({status})});
+      setRefresh(x=>x+1);
+    }catch(e){setError((e as Error).message);}
+  };
+  const updateApplication=async(id:string,status:'approved'|'rejected'|'review'|'enrolled')=>{
+    setError('');
+    try{
+      await request(`/organisations/${tenant}/applications/${id}`,{method:'PATCH',body:JSON.stringify({status})});
+      setRefresh(x=>x+1);
+    }catch(e){setError((e as Error).message);}
+  };
+  const updateMember=async(id:string,patch:{role?:string;active?:boolean})=>{
+    setError('');
+    try{
+      await request(`/organisations/${tenant}/users/${id}`,{method:'PATCH',body:JSON.stringify(patch)});
+      setRefresh(x=>x+1);
+    }catch(e){setError((e as Error).message);}
+  };
   const exportAccount=async()=>{
     try{
       const data=await request<object>('/auth/export');
@@ -223,6 +245,21 @@ export function ApiPortal() {
               <div><p className="font-medium">{'name' in item?item.name:'title' in item?item.title:'business_name' in item?item.business_name:'email' in item?item.email:'Record'}</p>
                 <p className="text-xs text-gray-500">{'status' in item?item.status:'role' in item?item.role:''}</p>
               </div>
+              {view==='members'&&active?.role==='owner'&&'email' in item&&item.role!=='owner'&&<div className="flex gap-2 flex-wrap">
+                <label className="text-xs">Role<select aria-label={`Role for ${item.email}`} value={item.role} onChange={e=>void updateMember(item.id,{role:e.target.value})} className="block border rounded p-2">
+                {['admin','mentor','beneficiary','viewer'].map(r=><option key={r} value={r}>{r}</option>)}
+                </select></label>
+                <button type="button" className="rounded border px-3 py-2 text-sm" onClick={()=>void updateMember(item.id,{active:!item.active})}>{item.active?'Deactivate':'Reactivate'}</button>
+              </div>}
+              {view==='tasks'&&'status' in item&&<div className="flex flex-wrap gap-2">
+                {active?.role==='beneficiary'&&['assigned','returned'].includes(item.status)&&<button type="button" className="rounded border px-3 py-2 text-sm" onClick={()=>void updateTaskStatus(item.id,'submitted')}>Submit task</button>}
+                {admin&&item.status==='submitted'&&<><button type="button" className="rounded border px-3 py-2 text-sm" onClick={()=>void updateTaskStatus(item.id,'completed')}>Approve task</button>
+                <button type="button" className="rounded border px-3 py-2 text-sm" onClick={()=>void updateTaskStatus(item.id,'returned')}>Return task</button></>}
+              </div>}
+              {view==='applications'&&admin&&'status' in item&&item.status==='submitted'&&<div className="flex gap-2">
+                <button type="button" className="rounded border px-3 py-2 text-sm" onClick={()=>void updateApplication(item.id,'approved')}>Approve</button>
+                <button type="button" className="rounded border px-3 py-2 text-sm" onClick={()=>void updateApplication(item.id,'rejected')}>Reject</button>
+              </div>}
               {view==='programmes'&&admin&&'status' in item&&item.status==='draft'&&<button className="border rounded px-3 py-2 text-sm" onClick={()=>void updateProgramme(item.id,'published')}>Publish</button>}
               {view==='programmes'&&admin&&'status' in item&&item.status==='published'&&<button className="border rounded px-3 py-2 text-sm" onClick={()=>void updateProgramme(item.id,'archived')}>Archive</button>}
             </li>)}
