@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircleIcon, LinkIcon } from 'lucide-react';
 interface BlockchainBadgeProps {
   verified?: boolean;

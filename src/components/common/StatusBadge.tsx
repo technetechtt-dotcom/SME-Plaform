@@ -1,5 +1,3 @@
-import React from 'react';
-
 const tones: Record<string, string> = {
   // tasks
   Assigned: 'bg-gray-100 text-gray-700',
