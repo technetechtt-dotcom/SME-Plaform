@@ -2,7 +2,7 @@ import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 interface ScoreCardProps {
   title: string;
   score: number;
-  maxScore: number;
+  maxScore?: number;
   trend: 'up' | 'down' | 'neutral';
   trendValue: number;
   type: 'percentage' | 'count' | 'currency' | 'ai' | 'roi' | 'money' | 'growth' | 'risk' | 'opportunity' | 'compliance' | 'funding';
@@ -11,7 +11,7 @@ interface ScoreCardProps {
 export function ScoreCard({
   title,
   score,
-  maxScore,
+  maxScore = 100,
   trend,
   trendValue,
   type,
