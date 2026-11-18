@@ -70,8 +70,8 @@ export async function tenantRoutes(app) {
   });
   app.get('/organisations/:orgId/programmes',{preHandler:requireTenant},async request=>{
     const q=paging(request);
-    const {rows}=await pool.query(`SELECT * FROM programmes WHERE organisation_id=$1 AND name ILIKE $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
-      [request.tenant.id,'%'+q.search+'%',q.limit,q.offset]);
+    const {rows}=await pool.query(`SELECT * FROM programmes WHERE organisation_id=$1 AND name ILIKE $2 AND ($5::boolean OR status='published') ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
+      [request.tenant.id,'%'+q.search+'%',q.limit,q.offset,['owner','admin','mentor'].includes(request.tenant.role)]);
     return {data:rows,page:q.page,limit:q.limit};
   });
   app.post('/organisations/:orgId/programmes',{preHandler:requireAdmin},async(request,reply)=>{
@@ -94,7 +94,7 @@ export async function tenantRoutes(app) {
     if(!rows[0])return reply.code(404).send({error:'Programme not found'});
     return rows[0];
   });
-  app.get('/organisations/:orgId/applications',{preHandler:requireStaff},async request=>{
+  app.get('/organisations/:orgId/applications',{preHandler:requireAdmin},async request=>{
     const q=paging(request);
     const {rows}=await pool.query(`SELECT * FROM applications WHERE organisation_id=$1 AND business_name ILIKE $2 ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
       [request.tenant.id,'%'+q.search+'%',q.limit,q.offset]);
@@ -115,10 +115,19 @@ export async function tenantRoutes(app) {
   });
   app.patch('/organisations/:orgId/applications/:id',{preHandler:requireAdmin},async(request,reply)=>{
     const data=z.object({status:z.enum(['review','approved','rejected','enrolled'])}).parse(request.body);
-    const {rows}=await pool.query(`UPDATE applications SET status=$3 WHERE id=$1 AND organisation_id=$2 RETURNING *`,
-      [uuid.parse(request.params.id),request.tenant.id,data.status]);
-    if(!rows[0])return reply.code(404).send({error:'Application not found'});
-    return rows[0];
+    const result=await transaction(async client=>{
+      const {rows:existing}=await client.query('SELECT status FROM applications WHERE id=$1 AND organisation_id=$2 FOR UPDATE',
+        [uuid.parse(request.params.id),request.tenant.id]);
+      if(!existing[0])return {code:404,error:'Application not found'};
+      const transitions={submitted:['review','approved','rejected'],review:['approved','rejected'],approved:['enrolled'],rejected:[],enrolled:[]};
+      if(!transitions[existing[0].status]?.includes(data.status))return {code:409,error:'Invalid application status transition'};
+      const {rows}=await client.query('UPDATE applications SET status=$3 WHERE id=$1 AND organisation_id=$2 RETURNING *',
+        [uuid.parse(request.params.id),request.tenant.id,data.status]);
+      await audit(client,request,'application.status_changed','application',rows[0].id,{before:existing[0].status,after:data.status});
+      return rows[0];
+    });
+    if(result.error)return reply.code(result.code).send({error:result.error});
+    return result;
   });
   app.get('/organisations/:orgId/tasks',{preHandler:requireTenant},async request=>{
     const q=paging(request);
@@ -131,7 +140,7 @@ export async function tenantRoutes(app) {
   app.post('/organisations/:orgId/tasks',{preHandler:requireStaff},async(request,reply)=>{
     const data=z.object({assigneeId:uuid,title:nonempty,description:z.string().max(10000).default(''),dueAt:z.iso.datetime().optional()}).parse(request.body);
     const {rows}=await pool.query(`INSERT INTO tasks(organisation_id,assignee_id,title,description,due_at)
-      SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM memberships WHERE organisation_id=$1 AND user_id=$2 AND active)
+      SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM memberships WHERE organisation_id=$1 AND user_id=$2 AND active AND role='beneficiary')
       RETURNING *`,[request.tenant.id,data.assigneeId,data.title,data.description,data.dueAt??null]);
     if(!rows[0])return reply.code(400).send({error:'Assignee is not an active member'});
     return reply.code(201).send(rows[0]);
@@ -156,14 +165,14 @@ export async function tenantRoutes(app) {
   app.post('/organisations/:orgId/sessions',{preHandler:requireStaff},async(request,reply)=>{
     const data=z.object({mentorId:uuid,beneficiaryId:uuid,startsAt:z.iso.datetime(),notes:z.string().max(10000).default('')}).parse(request.body);
     const {rows}=await pool.query(`INSERT INTO mentor_sessions(organisation_id,mentor_id,beneficiary_id,starts_at,notes)
-      SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM memberships WHERE organisation_id=$1 AND user_id=$2 AND active)
-      AND EXISTS(SELECT 1 FROM memberships WHERE organisation_id=$1 AND user_id=$3 AND active)
+      SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM memberships WHERE organisation_id=$1 AND user_id=$2 AND active AND role='mentor')
+      AND EXISTS(SELECT 1 FROM memberships WHERE organisation_id=$1 AND user_id=$3 AND active AND role='beneficiary')
       RETURNING *`,[request.tenant.id,data.mentorId,data.beneficiaryId,data.startsAt,data.notes]);
     if(!rows[0])return reply.code(400).send({error:'Session participants must belong to the organisation'});
     return reply.code(201).send(rows[0]);
   });
   app.get('/organisations/:orgId/returns',{preHandler:requireTenant},async request=>{
-    const staff=['owner','admin','mentor'].includes(request.tenant.role);
+    const staff=['owner','admin'].includes(request.tenant.role);
     const {rows}=await pool.query(`SELECT * FROM monthly_returns WHERE organisation_id=$1 AND ($2::boolean OR user_id=$3) ORDER BY period DESC LIMIT 100`,
       [request.tenant.id,staff,request.user.id]);
     return {data:rows};
@@ -176,9 +185,9 @@ export async function tenantRoutes(app) {
   });
   app.post('/organisations/:orgId/signoffs',{preHandler:requireStaff},async(request,reply)=>{
     const data=z.object({programmeId:uuid,amountCents:z.number().int().min(0).max(1000000000000)}).parse(request.body);
-    const {rows}=await pool.query(`INSERT INTO milestone_signoffs(organisation_id,programme_id,amount_cents)
-      SELECT $1,p.id,$3 FROM programmes p WHERE p.id=$2 AND p.organisation_id=$1 RETURNING *`,
-      [request.tenant.id,data.programmeId,data.amountCents]);
+    const {rows}=await pool.query(`INSERT INTO milestone_signoffs(organisation_id,programme_id,amount_cents,requested_by)
+      SELECT $1,p.id,$3,$4 FROM programmes p WHERE p.id=$2 AND p.organisation_id=$1 RETURNING *`,
+      [request.tenant.id,data.programmeId,data.amountCents,request.user.id]);
     if(!rows[0])return reply.code(404).send({error:'Programme not found'});
     return reply.code(201).send(rows[0]);
   });
@@ -190,6 +199,7 @@ export async function tenantRoutes(app) {
       const signoff=rows[0];
       if(!signoff)return {error:'Not found',code:404};
       if(signoff.status!=='requested')return {error:'Already processed',code:409};
+      if(signoff.requested_by===request.user.id)return {error:'Requester cannot approve their own signoff',code:403};
       if(data.decision==='approved') {
         const {rows:budget}=await client.query('SELECT budget_cents FROM programmes WHERE id=$1 AND organisation_id=$2 FOR UPDATE',[signoff.programme_id,request.tenant.id]);
         const {rows:total}=await client.query('SELECT COALESCE(SUM(amount_cents),0)::bigint AS amount FROM ledger_entries WHERE organisation_id=$1 AND signoff_id IN (SELECT id FROM milestone_signoffs WHERE programme_id=$2)',[request.tenant.id,signoff.programme_id]);
