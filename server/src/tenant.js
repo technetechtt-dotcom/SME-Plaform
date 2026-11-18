@@ -183,6 +183,15 @@ export async function tenantRoutes(app) {
       VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,[request.tenant.id,request.user.id,data.period,data.revenueCents,data.expensesCents,data.jobs]);
     return reply.code(201).send(rows[0]);
   });
+  app.get('/organisations/:orgId/signoffs',{preHandler:requireStaff},async request=>{
+    const staff=['owner','admin'].includes(request.tenant.role);
+    const q=paging(request);
+    const {rows}=await pool.query(`SELECT id,programme_id,amount_cents,status,requested_by,decided_by,decided_at,created_at
+       FROM milestone_signoffs WHERE organisation_id=$1 AND ($2::boolean OR requested_by=$3)
+       ORDER BY created_at DESC LIMIT $4 OFFSET $5`,
+       [request.tenant.id,staff,request.user.id,q.limit,q.offset]);
+    return {data:rows,page:q.page,limit:q.limit};
+  });
   app.post('/organisations/:orgId/signoffs',{preHandler:requireStaff},async(request,reply)=>{
     const data=z.object({programmeId:uuid,amountCents:z.number().int().min(0).max(1000000000000)}).parse(request.body);
     const {rows}=await pool.query(`INSERT INTO milestone_signoffs(organisation_id,programme_id,amount_cents,requested_by)
