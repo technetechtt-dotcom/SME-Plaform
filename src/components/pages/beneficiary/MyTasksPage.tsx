@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ListChecksIcon, PaperclipIcon } from 'lucide-react';
 import { usePlatform } from '../../../contexts/PlatformContext';
 import { useToast } from '../../../contexts/ToastContext';
