@@ -50,7 +50,7 @@ export function ApiPortal() {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
-  const [mode,setMode]=useState<'login'|'register'|'forgot'|'reset'|'verify'|'invite'>('login');
+  const [mode,setMode]=useState<'login'|'register'|'forgot'|'reset'|'verify'|'invite'|'resend'>('login');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [name,setName]=useState('');
@@ -110,6 +110,9 @@ export function ApiPortal() {
       }else if(mode==='register'){
         await request('/auth/register-organisation',{method:'POST',body:JSON.stringify({email,password,organisationName:name,slug})});
         setNotice('Registration submitted. Check your email and await organisation approval.');setMode('login');setPassword('');
+      }else if(mode==='resend'){
+        await request('/auth/resend-verification',{method:'POST',body:JSON.stringify({email})});
+        setNotice('If verification is pending, a new link will be emailed.');setMode('login');
       }else if(mode==='forgot'){
         await request('/auth/forgot-password',{method:'POST',body:JSON.stringify({email})});
         setNotice('If the account exists, a reset link will be sent.');setMode('login');
@@ -172,11 +175,11 @@ export function ApiPortal() {
     return <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white p-7 rounded-xl shadow border space-y-4">
         <h1 className="text-2xl font-semibold">SME-Plaform</h1>
-        <p className="text-sm text-gray-600">Secure account portal · {mode==='login'?'Sign in':mode==='register'?'Register your organisation':mode==='forgot'?'Recover account':mode==='verify'?'Verify email':mode==='invite'?'Accept invitation':'Reset password'}</p>
+        <p className="text-sm text-gray-600">Secure account portal · {mode==='login'?'Sign in':mode==='register'?'Register your organisation':mode==='forgot'?'Recover account':mode==='resend'?'Resend verification':mode==='verify'?'Verify email':mode==='invite'?'Accept invitation':'Reset password'}</p>
         {error&&<Warning message={error}/>}
         {notice&&<p role="status" className="p-3 rounded-md bg-green-50 text-green-800 text-sm">{notice}</p>}
         <form onSubmit={submitAuth} className="space-y-3">
-          {['login','register','forgot','invite'].includes(mode)&&<label className="block text-sm">Email address
+          {['login','register','forgot','resend','invite'].includes(mode)&&<label className="block text-sm">Email address
             <input className="mt-1 w-full rounded-md border p-2" type="email" required value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email"/>
           </label>}
           {mode==='register'&&<><label className="block text-sm">Organisation name
@@ -190,12 +193,13 @@ export function ApiPortal() {
           {['reset','verify','invite'].includes(mode)&&<label className="block text-sm">Verification token
             <input className="mt-1 w-full rounded-md border p-2" required value={token} onChange={e=>setToken(e.target.value)}/>
           </label>}
-          <button disabled={busy} className="w-full rounded-md bg-gray-900 text-white p-2 disabled:opacity-50">{busy?'Processing…':mode==='login'?'Sign in':mode==='register'?'Register':mode==='forgot'?'Send reset link':mode==='verify'?'Verify':mode==='invite'?'Create invited account':'Update password'}</button>
+          <button disabled={busy} className="w-full rounded-md bg-gray-900 text-white p-2 disabled:opacity-50">{busy?'Processing…':mode==='login'?'Sign in':mode==='register'?'Register':mode==='forgot'?'Send reset link':mode==='resend'?'Resend link':mode==='verify'?'Verify':mode==='invite'?'Create invited account':'Update password'}</button>
         </form>
         <div className="flex flex-wrap gap-3 text-sm text-blue-700">
           <button onClick={()=>{setMode('login');setError('');}}>Sign in</button>
           <button onClick={()=>{setMode('register');setError('');}}>Register</button>
           <button onClick={()=>{setMode('forgot');setError('');}}>Forgot password?</button>
+          <button onClick={()=>{setMode('resend');setError('');}}>Resend verification</button>
         </div>
         <p className="text-xs text-gray-500">New organisations require approval. This portal is a foundation and not yet production certified.</p>
       </div>
