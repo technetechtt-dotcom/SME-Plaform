@@ -13,7 +13,6 @@ import {
   SearchIcon,
   TrendingUpIcon,
   UserIcon,
-  UsersIcon,
   WalletIcon } from
 'lucide-react';
 import { DashboardShell } from '../common/DashboardShell';
