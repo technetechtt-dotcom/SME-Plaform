@@ -65,3 +65,4 @@ jobs:
           grep -q '"ok"' /tmp/health.json
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4000/api/auth/me)" = "401"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4000/api/platform-admin/organisations)" = "401"
+          node integration/api-check.js
