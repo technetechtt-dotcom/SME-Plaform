@@ -25,7 +25,8 @@ import {
   FilterIcon,
   MapIcon,
   FileTextIcon,
-  Share2Icon } from
+  Share2Icon,
+  SearchIcon } from
 'lucide-react';
 export function ImpactReportsPage() {
   const [timeFrame, setTimeFrame] = useState('1y');
